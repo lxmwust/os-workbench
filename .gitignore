@@ -7,3 +7,5 @@ a.out-*
 *-32*
 *-64*
 *.pdf
+.DS_Store
+a.dSYM
