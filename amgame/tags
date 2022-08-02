@@ -1,0 +1,57 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+AM_HOME	Makefile	/^export AM_HOME := $(PWD)\/..\/abstract-machine$/;"	m
+ARCH	Makefile	/^export ARCH := x86_64-qemu$/;"	m
+COM_H	include/com.h	2;"	d
+DOWN	include/snake.h	/^typedef enum { NONE=0, UP=-1, DOWN=1, LEFT=-1, RIGHT=1 } STEP;$/;"	e	enum:__anon1
+Direction	include/snake.h	/^typedef struct Direction {$/;"	s
+Direction	include/snake.h	/^} Direction;$/;"	t	typeref:struct:Direction
+GRID_COLOR	include/com.h	6;"	d
+GRID_PADDING	include/com.h	5;"	d
+GRID_SIZE	include/com.h	4;"	d
+KEYNAME	src/keyboard.c	5;"	d	file:
+LEFT	include/snake.h	/^typedef enum { NONE=0, UP=-1, DOWN=1, LEFT=-1, RIGHT=1 } STEP;$/;"	e	enum:__anon1
+MODULE	Makefile	/^export MODULE  := L0$/;"	m
+NAME	Makefile	/^NAME := amgame$/;"	m
+NONE	include/snake.h	/^typedef enum { NONE=0, UP=-1, DOWN=1, LEFT=-1, RIGHT=1 } STEP;$/;"	e	enum:__anon1
+Position	include/snake.h	/^typedef struct Position {$/;"	s
+Position	include/snake.h	/^} Position;$/;"	t	typeref:struct:Position
+RIGHT	include/snake.h	/^typedef enum { NONE=0, UP=-1, DOWN=1, LEFT=-1, RIGHT=1 } STEP;$/;"	e	enum:__anon1
+SNAKE_COLOR	include/com.h	8;"	d
+SNAKE_H	include/snake.h	2;"	d
+SNAKE_INIT_SIZE	include/snake.h	4;"	d
+SNAKE_MAX_SIZE	include/snake.h	5;"	d
+SNAKE_SIZE	include/com.h	7;"	d
+SRCS	Makefile	/^SRCS := $(shell find -L .\/src\/ -name "*.c")$/;"	m
+STEP	include/snake.h	/^typedef enum { NONE=0, UP=-1, DOWN=1, LEFT=-1, RIGHT=1 } STEP;$/;"	t	typeref:enum:__anon1
+Snake	include/snake.h	/^typedef struct Snake {$/;"	s
+Snake	include/snake.h	/^} Snake;$/;"	t	typeref:struct:Snake
+SnakeBody	include/snake.h	/^typedef struct SnakeBody {$/;"	s
+SnakeBody	include/snake.h	/^} SnakeBody;$/;"	t	typeref:struct:SnakeBody
+UP	include/snake.h	/^typedef enum { NONE=0, UP=-1, DOWN=1, LEFT=-1, RIGHT=1 } STEP;$/;"	e	enum:__anon1
+VIDEO_H	include/video.h	2;"	d
+body	include/snake.h	/^	SnakeBody body[SNAKE_MAX_SIZE + 1];$/;"	m	struct:Snake
+dir	include/snake.h	/^	Direction dir;$/;"	m	struct:SnakeBody
+draw_rect	src/video.c	/^static void draw_rect(int x, int y, int w, int h, uint32_t color) {$/;"	f	file:
+draw_snake	src/video.c	/^void draw_snake(Snake *sk) {$/;"	f
+draw_snake_body	src/video.c	/^static void draw_snake_body(int x, int y, uint32_t color) {$/;"	f	file:
+draw_snake_move	src/video.c	/^void draw_snake_move(Snake *sk, Direction dir) {$/;"	f
+get_key	src/keyboard.c	/^void get_key(Direction *dir) {$/;"	f
+h	src/snake.c	/^static int w, h;$/;"	v	file:
+init	src/snake.c	/^static void init() {$/;"	f	file:
+key_names	src/keyboard.c	/^static const char *key_names[] = {$/;"	v	file:
+main	src/game.c	/^int main(const char *args) {$/;"	f
+pos	include/snake.h	/^	Position  pos;$/;"	m	struct:SnakeBody
+size	include/snake.h	/^	int size;$/;"	m	struct:Snake
+sk_conflict	src/snake.c	/^static int sk_conflict(Snake *sk, int id) {$/;"	f	file:
+sk_init	src/snake.c	/^void sk_init(Snake *sk) { $/;"	f
+sk_move	src/snake.c	/^void sk_move(Snake *sk, Direction dir) {$/;"	f
+w	src/snake.c	/^static int w, h;$/;"	v	file:
+x	include/snake.h	/^	STEP x, y;$/;"	m	struct:Direction
+x	include/snake.h	/^	int x, y;$/;"	m	struct:Position
+y	include/snake.h	/^	STEP x, y;$/;"	m	struct:Direction
+y	include/snake.h	/^	int x, y;$/;"	m	struct:Position

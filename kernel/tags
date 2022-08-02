@@ -1,0 +1,221 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+AM_HOME	Makefile	/^export AM_HOME := $(PWD)\/..\/abstract-machine$/;"	m
+ARCH	Makefile	/^export ARCH    := x86_64-qemu$/;"	m
+Area	test/common.h	/^} Area;$/;"	t	typeref:struct:__anon5
+DEVICES	src/dev/dev.c	4;"	d	file:
+DEV_CNT	src/dev/dev.c	11;"	d	file:
+HB_CONT_SIZE	src/pmm.c	12;"	d	file:
+HB_HEAD_SIZE	src/pmm.c	11;"	d	file:
+HB_MAX	src/pmm.c	9;"	d	file:
+HB_MIN	src/pmm.c	10;"	d	file:
+HB_WHOL_SIZE	src/pmm.c	13;"	d	file:
+HB_cont_base	src/pmm.c	/^static void  *HB_cont_base; \/\/ basic addr of HB content$/;"	v	file:
+HB_head_base	src/pmm.c	/^static void  *HB_head_base;	\/\/ basic addr of HB head$/;"	v	file:
+HB_number	src/pmm.c	/^static size_t HB_number;		\/\/ number of HB$/;"	v	file:
+HEAP_SIZE	src/pmm.c	321;"	d	file:
+INC_PATH	Makefile	/^INC_PATH       := include\/ framework\/$/;"	m
+INIT	src/dev/dev.c	37;"	d	file:
+MODULE	framework/kernel.h	/^MODULE(dev) {$/;"	f
+MODULE	framework/kernel.h	/^MODULE(kmt) {$/;"	f
+MODULE	framework/kernel.h	/^MODULE(os) {$/;"	f
+MODULE	framework/kernel.h	/^MODULE(pmm) {$/;"	f
+MODULE	framework/kernel.h	6;"	d
+MODULE_DEF	framework/kernel.h	11;"	d
+NAME	Makefile	/^NAME           := kernel$/;"	m
+NEVENTS	src/dev/dev_input.c	4;"	d	file:
+NSPRITE	src/dev/dev_video.c	5;"	d	file:
+NTEXTURE	src/dev/dev_video.c	4;"	d	file:
+NTHREAD	test/thread.h	9;"	d
+ROUNDUP	test/common.h	4;"	d
+SPRITE_BRK	include/devices.h	47;"	d
+SRCS	Makefile	/^SRCS           := framework\/main.c $(shell find -L .\/src\/ -name "*.c")$/;"	m
+TEXTURE_H	include/devices.h	46;"	d
+TEXTURE_W	include/devices.h	45;"	d
+TTY_COOK_BUF_SZ	src/dev/dev_tty.c	4;"	d	file:
+T_DEAD	test/thread.h	/^enum { T_FREE = 0, T_LIVE, T_DEAD, };$/;"	e	enum:__anon6
+T_FREE	test/thread.h	/^enum { T_FREE = 0, T_LIVE, T_DEAD, };$/;"	e	enum:__anon6
+T_LIVE	test/thread.h	/^enum { T_FREE = 0, T_LIVE, T_DEAD, };$/;"	e	enum:__anon6
+alloc	framework/main.c	/^void alloc(int sz) {$/;"	f
+alt	include/devices.h	/^  uint32_t ctrl: 1, alt: 1;$/;"	m	struct:input_event
+alt_down	include/devices.h	/^  int capslock, shift_down[2], ctrl_down[2], alt_down[2];$/;"	m	struct:__anon1
+blk_read	src/dev/dev_sd.c	/^static void blk_read(void *buf, int blkno, int blkcnt) {$/;"	f	file:
+blk_write	src/dev/dev_sd.c	/^static void blk_write(void *buf, int blkno, int blkcnt) {$/;"	f	file:
+blkcnt	include/devices.h	/^  uint32_t blkcnt, blksz;$/;"	m	struct:__anon4
+blksz	include/devices.h	/^  uint32_t blkcnt, blksz;$/;"	m	struct:__anon4
+buf	include/devices.h	/^  char *buf, *end, *front, *rear;$/;"	m	struct:tty_queue
+buf	include/devices.h	/^  struct character *buf, *end, *cursor;$/;"	m	struct:__anon3	typeref:struct:__anon3::character
+buf	include/devices.h	/^  uint8_t *buf;$/;"	m	struct:__anon4
+capslock	include/devices.h	/^  int capslock, shift_down[2], ctrl_down[2], alt_down[2];$/;"	m	struct:__anon1
+ch	include/devices.h	/^  unsigned char ch;$/;"	m	struct:character
+character	include/devices.h	/^struct character {$/;"	s
+cleanup	test/thread.h	/^__attribute__((destructor)) void cleanup() {$/;"	f
+columns	include/devices.h	/^  int lines, columns, size;$/;"	m	struct:__anon3
+cont	src/pmm.c	/^	void *cont;		\/\/ content address$/;"	m	struct:heap_block	file:
+cooked	include/devices.h	/^  sem_t lock, cooked;$/;"	m	struct:__anon3
+create	test/thread.h	/^void create(void *fn) {$/;"	f
+ctrl	include/devices.h	/^  uint32_t ctrl: 1, alt: 1;$/;"	m	struct:input_event
+ctrl_down	include/devices.h	/^  int capslock, shift_down[2], ctrl_down[2], alt_down[2];$/;"	m	struct:__anon1
+current	include/devices.h	/^  uint32_t current;$/;"	m	struct:display_info
+cursor	include/devices.h	/^  struct character *buf, *end, *cursor;$/;"	m	struct:__anon3	typeref:struct:__anon3::
+data	include/devices.h	/^  uint32_t data: 16;$/;"	m	struct:input_event
+dev	src/dev/dev.c	/^MODULE_DEF(dev) = {$/;"	v
+dev_create	src/dev/dev.c	/^static device_t *dev_create(int size, const char* name, int id, devops_t *ops) {$/;"	f	file:
+dev_init	src/dev/dev.c	/^static void dev_init() {$/;"	f	file:
+dev_input_task	src/dev/dev_input.c	/^void dev_input_task(void *args) {$/;"	f
+dev_lookup	src/dev/dev.c	/^static device_t *dev_lookup(const char *name) {$/;"	f	file:
+dev_tty_task	src/dev/dev_tty.c	/^void dev_tty_task(void *arg) {$/;"	f
+device	include/devices.h	/^struct device {$/;"	s
+device_t	framework/kernel.h	/^typedef struct device device_t;$/;"	t	typeref:struct:device
+devices	src/dev/dev.c	/^device_t *devices[0 DEVICES(DEV_CNT)];$/;"	v
+devops	include/devices.h	/^typedef struct devops {$/;"	s
+devops_t	include/devices.h	/^} devops_t;$/;"	t	typeref:struct:devops
+dirty	include/devices.h	/^  uint8_t *dirty;$/;"	m	struct:__anon3
+display	include/devices.h	/^  device_t *fbdev; int display;$/;"	m	struct:__anon3
+display	include/devices.h	/^  unsigned int display: 4;$/;"	m	struct:sprite
+display_info	include/devices.h	/^struct display_info {$/;"	s
+end	include/devices.h	/^  char *buf, *end, *front, *rear;$/;"	m	struct:tty_queue
+end	include/devices.h	/^  struct character *buf, *end, *cursor;$/;"	m	struct:__anon3	typeref:struct:__anon3::
+end	test/common.h	/^	void *start, *end;$/;"	m	struct:__anon5
+entry	test/test.c	/^static void entry(int tid) {$/;"	f	file:
+entry	test/thread.h	/^  void (*entry)(int);$/;"	m	struct:thread
+event	src/dev/dev_input.c	/^static struct input_event event(int ctrl, int alt, int data) {$/;"	f	file:
+event_sem	include/devices.h	/^  sem_t event_sem;$/;"	m	struct:__anon1
+events	include/devices.h	/^  struct input_event *events;$/;"	m	struct:__anon1	typeref:struct:__anon1::input_event
+fb_init	src/dev/dev_video.c	/^int fb_init(device_t *dev) {$/;"	f
+fb_ops	src/dev/dev_video.c	/^devops_t fb_ops = {$/;"	v
+fb_read	src/dev/dev_video.c	/^static int fb_read(device_t *dev, int offset, void *buf, int count) {$/;"	f	file:
+fb_sem	src/dev/dev_video.c	/^static sem_t fb_sem;$/;"	v	file:
+fb_t	include/devices.h	/^} fb_t;$/;"	t	typeref:struct:__anon2
+fb_write	src/dev/dev_video.c	/^static int fb_write(device_t *dev, int offset, const void *buf, int count) {$/;"	f	file:
+fbdev	include/devices.h	/^  device_t *fbdev; int display;$/;"	m	struct:__anon3
+finish	test/test.c	/^static void finish() { printf("End\\n"); }$/;"	f	file:
+font_load	src/dev/dev_video.c	/^static void font_load(fb_t *fb, uint8_t *font) {$/;"	f	file:
+front	include/devices.h	/^  char *buf, *end, *front, *rear;$/;"	m	struct:tty_queue
+front	include/devices.h	/^  int front, rear;$/;"	m	struct:__anon1
+handler_t	framework/kernel.h	/^typedef Context *(*handler_t)(Event, Context *);$/;"	t
+hb_check_addr	src/pmm.c	/^static size_t hb_check_addr(void *addr) {$/;"	f	file:
+hb_check_idx	src/pmm.c	/^static size_t hb_check_idx(size_t idx) {$/;"	f	file:
+hb_check_size	src/pmm.c	/^static size_t hb_check_size(size_t size) {$/;"	f	file:
+hb_find	src/pmm.c	/^static size_t hb_find(char *head, size_t idx, size_t block_size, size_t size) {$/;"	f	file:
+hb_free	src/pmm.c	/^static size_t hb_free(heap_block *hb, size_t idx, size_t size, void *addr) {$/;"	f	file:
+hb_idx2addr	src/pmm.c	/^static void *hb_idx2addr(heap_block *hb, size_t idx) {$/;"	f	file:
+hb_idx2size	src/pmm.c	/^static size_t hb_idx2size(size_t idx) {$/;"	f	file:
+hb_init	src/pmm.c	/^static void hb_init(heap_block *hb, void *start) {$/;"	f	file:
+hb_pushup	src/pmm.c	/^static void hb_pushup(char *head, size_t idx) {$/;"	f	file:
+hb_roundup	src/pmm.c	/^static size_t hb_roundup(size_t size) {$/;"	f	file:
+head	src/pmm.c	/^	char *head;		\/\/ head infomation$/;"	m	struct:heap_block	file:
+heap	test/common.h	/^Area heap;$/;"	v
+heap_block	src/pmm.c	/^typedef struct heap_block {$/;"	s	file:
+heap_block	src/pmm.c	/^} heap_block;$/;"	t	typeref:struct:heap_block	file:
+height	include/devices.h	/^  uint32_t width, height;$/;"	m	struct:display_info
+highbit	src/pmm.c	/^static size_t highbit(size_t x) {$/;"	f	file:
+id	include/devices.h	/^  int id;$/;"	m	struct:device
+id	test/thread.h	/^  int id, status;$/;"	m	struct:thread
+info	include/devices.h	/^  struct display_info *info;$/;"	m	struct:__anon2	typeref:struct:__anon2::display_info
+init	include/devices.h	/^  int (*init)(device_t *dev);$/;"	m	struct:devops
+input_event	include/devices.h	/^struct input_event {$/;"	s
+input_init	src/dev/dev_input.c	/^static int input_init(device_t *dev) {$/;"	f	file:
+input_keydown	src/dev/dev_input.c	/^static void input_keydown(device_t *dev, AM_INPUT_KEYBRD_T key) {$/;"	f	file:
+input_notify	src/dev/dev_input.c	/^static Context *input_notify(Event ev, Context *context) {$/;"	f	file:
+input_ops	src/dev/dev_input.c	/^devops_t input_ops = {$/;"	v
+input_read	src/dev/dev_input.c	/^static int input_read(device_t *dev, int offset, void *buf, int count) {$/;"	f	file:
+input_t	include/devices.h	/^} input_t;$/;"	t	typeref:struct:__anon1
+input_write	src/dev/dev_input.c	/^static int input_write(device_t *dev, int offset, const void *buf, int count) {$/;"	f	file:
+is_empty	src/dev/dev_input.c	/^static int is_empty(input_t *in) {$/;"	f	file:
+join	test/thread.h	/^void join() {$/;"	f
+kalloc	src/pmm.c	/^static void *kalloc(size_t size) {$/;"	f	file:
+keymap	src/dev/dev_input.c	/^static char keymap[256][2] = {$/;"	v	file:
+keymap	src/dev/dev_input.c	/^static char keymap[][2];$/;"	v	file:
+kfree	src/pmm.c	/^static void kfree(void *ptr) {$/;"	f	file:
+kinit	src/pmm.c	/^static void kinit() {$/;"	f	file:
+kmt	src/kmt.c	/^MODULE_DEF(kmt) = {$/;"	v
+lines	include/devices.h	/^  int lines, columns, size;$/;"	m	struct:__anon3
+lock	include/devices.h	/^  sem_t lock, cooked;$/;"	m	struct:__anon3
+lock	include/devices.h	/^  spinlock_t lock;$/;"	m	struct:__anon1
+lowbit	src/pmm.c	/^static size_t lowbit(size_t x) {$/;"	f	file:
+main	framework/main.c	/^int main() {$/;"	f
+main	test/test.c	/^int main() {$/;"	f
+metadata	include/devices.h	/^  uint32_t metadata;$/;"	m	struct:character
+name	include/devices.h	/^  const char *name;$/;"	m	struct:device
+num_displays	include/devices.h	/^  uint32_t num_displays;$/;"	m	struct:display_info
+num_sprites	include/devices.h	/^  uint32_t num_textures, num_sprites;$/;"	m	struct:display_info
+num_textures	include/devices.h	/^  uint32_t num_textures, num_sprites;$/;"	m	struct:display_info
+ops	include/devices.h	/^  devops_t *ops;$/;"	m	struct:device
+os	src/os.c	/^MODULE_DEF(os) = {$/;"	v
+os_init	src/os.c	/^static void os_init() {$/;"	f	file:
+os_run	src/os.c	/^static void os_run() {$/;"	f	file:
+pixels	include/devices.h	/^  uint32_t pixels[TEXTURE_W * TEXTURE_H];$/;"	m	struct:texture
+pmm	src/pmm.c	/^MODULE_DEF(pmm) = {$/;"	v
+pmm_init	src/pmm.c	/^static void pmm_init() {$/;"	f	file:
+pmm_test	framework/main.c	/^void pmm_test() {$/;"	f
+pop_event	src/dev/dev_input.c	/^static struct input_event pop_event(input_t *in) {$/;"	f	file:
+ptr	include/devices.h	/^  void *ptr;$/;"	m	struct:device
+push_event	src/dev/dev_input.c	/^static void push_event(input_t *in, struct input_event ev) {$/;"	f	file:
+queue	include/devices.h	/^  struct tty_queue queue;$/;"	m	struct:__anon3	typeref:struct:__anon3::tty_queue
+read	include/devices.h	/^  int (*read) (device_t *dev, int offset, void *buf, int count);$/;"	m	struct:devops
+rear	include/devices.h	/^  char *buf, *end, *front, *rear;$/;"	m	struct:tty_queue
+rear	include/devices.h	/^  int front, rear;$/;"	m	struct:__anon1
+sd_init	src/dev/dev_sd.c	/^static int sd_init(device_t *dev) {$/;"	f	file:
+sd_ops	src/dev/dev_sd.c	/^devops_t sd_ops = {$/;"	v
+sd_read	src/dev/dev_sd.c	/^static int sd_read(device_t *dev, int offset, void *buf, int count) {$/;"	f	file:
+sd_t	include/devices.h	/^} sd_t;$/;"	t	typeref:struct:__anon4
+sd_write	src/dev/dev_sd.c	/^static int sd_write(device_t *dev, int offset, const void *buf, int count) {$/;"	f	file:
+sem_kbdirq	src/dev/dev_input.c	/^static sem_t sem_kbdirq;$/;"	v	file:
+sem_t	framework/kernel.h	/^typedef struct semaphore sem_t;$/;"	t	typeref:struct:semaphore
+semaphore	include/os.h	/^struct semaphore {$/;"	s
+shift_down	include/devices.h	/^  int capslock, shift_down[2], ctrl_down[2], alt_down[2];$/;"	m	struct:__anon1
+show_cursor	src/dev/dev_tty.c	/^static int show_cursor = 1;$/;"	v	file:
+size	include/devices.h	/^  int lines, columns, size;$/;"	m	struct:__anon3
+sp_buf	include/devices.h	/^  struct sprite *sp_buf;$/;"	m	struct:__anon3	typeref:struct:__anon3::sprite
+spinlock	include/os.h	/^struct spinlock {$/;"	s
+spinlock_t	framework/kernel.h	/^typedef struct spinlock spinlock_t;$/;"	t	typeref:struct:spinlock
+sprite	include/devices.h	/^struct sprite {$/;"	s
+sprites	include/devices.h	/^  struct sprite *sprites;$/;"	m	struct:__anon2	typeref:struct:__anon2::sprite
+start	test/common.h	/^	void *start, *end;$/;"	m	struct:__anon5
+stat	src/pmm.c	/^	char stat;		\/\/ 0: one HB$/;"	m	struct:heap_block	file:
+status	test/thread.h	/^  int id, status;$/;"	m	struct:thread
+task	include/os.h	/^struct task {$/;"	s
+task_t	framework/kernel.h	/^typedef struct task task_t;$/;"	t	typeref:struct:task
+term_font	src/dev/dev_video.c	/^static uint8_t term_font[] = {$/;"	v	file:
+term_font	src/dev/dev_video.c	/^static uint8_t term_font[];$/;"	v	file:
+texture	include/devices.h	/^  uint16_t texture, x, y;$/;"	m	struct:sprite
+texture	include/devices.h	/^struct texture {$/;"	s
+texture_fill	src/dev/dev_video.c	/^static void texture_fill(struct texture *tx, int top, uint8_t *bits, uint32_t fg, uint32_t bg) {$/;"	f	file:
+textures	include/devices.h	/^  struct texture *textures;$/;"	m	struct:__anon2	typeref:struct:__anon2::texture
+thread	test/thread.h	/^  pthread_t thread;$/;"	m	struct:thread
+thread	test/thread.h	/^struct thread {$/;"	s
+tpool	test/thread.h	/^struct thread tpool[NTHREAD], *tptr = tpool;$/;"	v	typeref:struct:thread
+tptr	test/thread.h	/^struct thread tpool[NTHREAD], *tptr = tpool;$/;"	v	typeref:struct:
+tty_cook	src/dev/dev_tty.c	/^static int tty_cook(tty_t *tty, char ch) {$/;"	f	file:
+tty_defaultch	src/dev/dev_tty.c	/^static struct character tty_defaultch() {$/;"	f	file:
+tty_enqueue	src/dev/dev_tty.c	/^static void tty_enqueue(struct tty_queue *q, char ch) {$/;"	f	file:
+tty_init	src/dev/dev_tty.c	/^static int tty_init(device_t *ttydev) {$/;"	f	file:
+tty_mark	src/dev/dev_tty.c	/^static void tty_mark(tty_t *tty, struct character *ch) {$/;"	f	file:
+tty_mark_all	src/dev/dev_tty.c	/^static void tty_mark_all(tty_t *tty) {$/;"	f	file:
+tty_mark_line	src/dev/dev_tty.c	/^static void tty_mark_line(tty_t *tty, struct character *ch) {$/;"	f	file:
+tty_ops	src/dev/dev_tty.c	/^devops_t tty_ops = {$/;"	v
+tty_pop_back	src/dev/dev_tty.c	/^static int tty_pop_back(struct tty_queue *q) {$/;"	f	file:
+tty_putc	src/dev/dev_tty.c	/^static void tty_putc(tty_t *tty, char ch) {$/;"	f	file:
+tty_queue	include/devices.h	/^struct tty_queue {$/;"	s
+tty_read	src/dev/dev_tty.c	/^static int tty_read(device_t *dev, int offset, void *buf, int count) {$/;"	f	file:
+tty_render	src/dev/dev_tty.c	/^static void tty_render(tty_t *tty) {$/;"	f	file:
+tty_t	include/devices.h	/^} tty_t;$/;"	t	typeref:struct:__anon3
+tty_upd_backsp	src/dev/dev_tty.c	/^static inline void tty_upd_backsp(tty_t *tty) {$/;"	f	file:
+tty_upd_cr	src/dev/dev_tty.c	/^static inline void tty_upd_cr(tty_t *tty) {$/;"	f	file:
+tty_upd_lf	src/dev/dev_tty.c	/^static inline void tty_upd_lf(tty_t *tty) {$/;"	f	file:
+tty_upd_putc	src/dev/dev_tty.c	/^static inline void tty_upd_putc(tty_t *tty, char ch) {$/;"	f	file:
+tty_upd_scrollup	src/dev/dev_tty.c	/^static void tty_upd_scrollup(tty_t *tty) {$/;"	f	file:
+tty_write	src/dev/dev_tty.c	/^static int tty_write(device_t *dev, int offset, const void *buf, int count) {$/;"	f	file:
+welcome	src/dev/dev_tty.c	/^static void welcome(device_t *dev) {$/;"	f	file:
+welcome_text	src/dev/dev_tty.c	/^static char welcome_text[] = $/;"	v	file:
+width	include/devices.h	/^  uint32_t width, height;$/;"	m	struct:display_info
+wrapper	test/thread.h	/^void *wrapper(void *arg) {$/;"	f
+write	include/devices.h	/^  int (*write)(device_t *dev, int offset, const void *buf, int count);$/;"	m	struct:devops
+x	include/devices.h	/^  uint16_t texture, x, y;$/;"	m	struct:sprite
+y	include/devices.h	/^  uint16_t texture, x, y;$/;"	m	struct:sprite
+z	include/devices.h	/^  unsigned int z: 12;$/;"	m	struct:sprite
