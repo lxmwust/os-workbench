@@ -1,0 +1,305 @@
+# libco
+
+## 1. 实验实现
+
+下面是个人的思路及其实现
+
+### `struct co`结构体定义
+
+我们首先要定义的，就是`co`这个协程结构。我们按照材料中给的参考实现的`struct co`进行定义即可，如下所示
+
+```c
+enum co_status {
+  CO_NEW = 1, // 新创建，还未执行过
+  CO_RUNNING, // 已经执行过
+  CO_WAITING, // 在 co_wait 上等待
+  CO_DEAD,    // 已经结束，但还未释放资源
+};
+
+#define K 1024
+#define STACK_SIZE (64 * K)
+
+struct co {
+  const char *name;
+  void (*func)(void *); // co_start 指定的入口地址和参数
+  void *arg;
+
+  enum co_status status;		// 协程的状态
+  struct co *    waiter;		// 是否有其他协程在等待当前协程
+  jmp_buf        context;		// 寄存器现场 (setjmp.h)
+  unsigned char stack[STACK_SIZE]; 	// 协程的堆栈
+};
+```
+
+### `co_start`函数的实现
+
+`co_start`的原理很简单，就是申请相关结构体，并且初始化各个字段即可，其代码如下所示
+
+```c
+struct co *co_start(const char *name, void (*func)(void *), void *arg) {
+  struct co *coroutine = (struct co *)malloc(sizeof(struct co));
+  assert(coroutine);
+
+  coroutine->name = name;
+  coroutine->func = func;
+  coroutine->arg = arg;
+  coroutine->status = CO_NEW;
+  coroutine->waiter = NULL;
+
+  co_node_insert(coroutine);
+  return coroutine;
+}
+```
+
+除此之外，为了方便管理，我们使用双向循环链表，将所有创建的`struct co`放入，相关的代码如下所示
+
+```c
+typedef struct CONODE {
+  struct co *coroutine;
+
+  struct CONODE *fd, *bk;
+} CoNode;
+
+static CoNode *co_node = NULL;
+/*
+ * 如果co_node == NULL，则创建一个新的双向循环链表即可，并返回
+ * 如果co_node != NULL, 则在co_node和co_node->fd之间插入，仍然返回co_node的值
+ */
+static void co_node_insert(struct co *coroutine) {
+  CoNode *victim = (CoNode *)malloc(sizeof(CoNode));
+  assert(victim);
+
+  victim->coroutine = coroutine;
+  if (co_node == NULL) {
+    victim->fd = victim->bk = victim;
+    co_node = victim;
+  } else {
+    victim->fd = co_node->fd;
+    victim->bk = co_node;
+    victim->fd->bk = victim->bk->fd = victim;
+  }
+}
+
+/*
+ * 如果当前只剩node一个，则返回该一个
+ * 否则，拉取当前co_node对应的协程，并沿着bk方向移动
+ */
+static CoNode *co_node_remove() {
+  CoNode *victim = NULL;
+
+  if (co_node == NULL) {
+    return NULL;
+  } else if (co_node->bk == co_node) {
+    victim = co_node;
+    co_node = NULL;
+  } else {
+    victim = co_node;
+
+    co_node = co_node->bk;
+    co_node->fd = victim->fd;
+    co_node->fd->bk = co_node;
+  }
+
+  return victim;
+}
+```
+
+### `co_yield`函数的设计与实现
+
+在前面的指南中已经提到了，实际上`co_yield`函数，就是一个保存当前协程的上下文，并切换到选中的协程的上下文的过程。而由于我们前面使用双向循环链表保存当前所有的协程，因此通过沿着`co_node->bk`遍历，总可以找到一个协程，其状态为`CO_NEW`或`CO_RUNNING`(始终有调用`co_yield`的协程为待选中协程)，然后切换到该指定协程上并进行运行即可;
+根据前面的分析，由于选中的协程包含有`CO_NEW`和`CO_RUNNING`两种情况:
+
+1. 选中的协程为`CO_RUNNING`，则选中的协程必然是执行过`co_yield`函数，保存了其上下文后被释放了CPU的协程。因此我们只需要调用`longjmp`函数，即立马恢复到选中的协程保存的上下文中。这里需要特别说明的是，当时保存的协程的上下文，其正在执行`co_yield`，也就是恢复上下文后，其下一条命令就是`setjmp`语句的紧接着的下一条，这也就是我们需要判断`setjmp`返回值的原因——根据返回值，判断当前执行的协程是刚保存完的协程;还是被选中后接着跳转过来的协程。这里有点类似于`fork`函数，需要特别注意以下
+
+2. 选中的协程为`CO_NEW`，则此时协程中的栈是空的，则此时不能像上面一样，直接跳转——因为其栈是空的，则并没有保存协程的上下文，自然是错误的。因此这里我们运行函数就行，也就是伪造好参数传递，然后直接`call`给定的函数即可。当然，`call`的话，其最终仍然会返回并继续执行下面的命令(如果函数是有限执行的话)。当协程执行完后，下面将其状态更改为`CO_DEAD`即可，并修改等待其结束的协程的状态，然后再次调用`co_yield`即可，切换到其他协程上，之后再也不会被选中执行，并等待`co_wait`释放相关资源即可。
+
+    选中的协程为`CO_NEW`下，其整体流程如下所示
+
+![](./images/1.png)
+
+这里有几点需要注意的问题:
+
+- 由于M2开的是`O1`优化，因此首先修改协程状态为`CO_RUNNING`，然后又修改为`CO_DEAD`，会被编译器直接优化为最后一次覆写
+- 当我们使用`call`调用了指定的函数后，其部分寄存器的值会被改变(如函数约定中调用者保存的寄存器)。而由于调用处的代码是我们自己内敛汇编实现的，因此需要自己实现相关寄存器的保存和恢复，避免影响后面的代码执行(也就是`stack_switch_call`和`restore_return`)
+
+```c
+/*
+ * 切换栈，即让选中协程的所有堆栈信息在自己的堆栈中，而非调用者的堆栈。保存调用者需要保存的寄存器，并调用指定的函数
+ */
+static inline void stack_switch_call(void *sp, void *entry, void *arg) {
+  asm volatile(
+#if __x86_64__
+      "movq %%rcx, 0(%0); movq %0, %%rsp; movq %2, %%rdi; call *%1"
+      :
+      : "b"((uintptr_t)sp - 16), "d"((uintptr_t)entry), "a"((uintptr_t)arg)
+#else
+      "movl %%ecx, 4(%0); movl %0, %%esp; movl %2, 0(%0); call *%1"
+      :
+      : "b"((uintptr_t)sp - 8), "d"((uintptr_t)entry), "a"((uintptr_t)arg)
+#endif
+  );
+}
+/*
+ * 从调用的指定函数返回，并恢复相关的寄存器。此时协程执行结束，以后再也不会执行该协程的上下文。这里需要注意的是，其和上面并不是对称的，因为调用协程给了新创建的选中协程的堆栈，则选中协程以后就在自己的堆栈上执行，永远不会返回到调用协程的堆栈。
+ */
+static inline void restore_return() {
+  asm volatile(
+#if __x86_64__
+      "movq 0(%%rsp), %%rcx"
+      :
+      :
+#else
+      "movl 4(%%esp), %%ecx"
+      :
+      :
+#endif
+  );
+}
+
+#define __LONG_JUMP_STATUS (1)
+void co_yield () {
+  int status = setjmp(current->context);
+  if (!status) {
+    //此时开始查找待选中的进程，因为co_node应该指向的就是current对应的节点，因此首先向下移动一个，使当前线程优先级最低
+    co_node = co_node->bk;
+    while (!((current = co_node->coroutine)->status == CO_NEW || current->status == CO_RUNNING)) {
+      co_node = co_node->bk;
+    }
+
+    assert(current);
+
+    if (current->status == CO_RUNNING) {
+      longjmp(current->context, __LONG_JUMP_STATUS);
+    } else {
+      ((struct co volatile *)current)->status = CO_RUNNING;  //这里如果直接赋值，编译器会和后面的覆写进行优化
+
+      // 栈由高地址向低地址生长
+      stack_switch_call(current->stack + STACK_SIZE, current->func, current->arg);
+      //恢复相关寄存器
+      restore_return();
+
+      //此时协程已经完成执行
+      current->status = CO_DEAD;
+
+      if (current->waiter) {
+        current->waiter->status = CO_RUNNING;
+      }
+      co_yield ();
+    }
+  }
+
+  assert(status && current->status == CO_RUNNING);  //此时一定是选中的进程通过longjmp跳转到的情况执行到这里
+}
+```
+
+### `co_wait`函数的设计与实现
+
+这个函数的实现就很简单——如果等待的协程的状态已经是`CO_DEAD`，则直接回收其资源就行;如果等待的协程的状态还不是`CO_DEAD`，则首先标记当前调用协程的状态为`CO_WAITING`，避免之后被选中执行，然后调用`co_yield`函数，让其他协程执行，直到待释放的协程执行完毕，唤醒调用协程(即修改其状态)为止
+
+```c
+void co_wait(struct co *coroutine) {
+  assert(coroutine);
+
+  if (coroutine->status != CO_DEAD) {
+    coroutine->waiter = current;
+    current->status = CO_WAITING;
+    co_yield ();
+  }
+
+  /*
+   * 释放coroutine对应的CoNode
+   */
+  while (co_node->coroutine != coroutine) {
+    co_node = co_node->bk;
+  }
+
+  assert(co_node->coroutine == coroutine);
+
+  free(coroutine);
+  free(co_node_remove());
+}
+```
+
+### 全局构造函数
+
+前面已经提到了，实际上最开始执行的`main`函数流，也是一个协程。因此我们需要在开始执行`main`之前，为其创建一个协程。这里定义`__attribute__((constructor))属性函数，从其申请一个协程即可 需要注意的是，和普通的协程不一样，实际上这个协程在创建的时候，就已经是`CO_RUNNING`的状态了，不需要在调用其他的函数了。因此我们创建完成后，将其`status`字段进行修改即可。
+
+```c
+static __attribute__((constructor)) void co_constructor(void) {
+  current = co_start("main", NULL, NULL);
+  current->status = CO_RUNNING;
+}
+```
+
+### 全局析构函数
+
+最后，当`main`函数执行结束后，所有协程都应该无条件结束。换句话说，也就是在`main`函数终止后，将所有的协程资源全部释放掉即可，也就是双向循环链接及其协程结构这些数据全部释放即可。这里同样通过`__attribute__((destructor))`属性的函数，执行上述操作即可
+
+```c
+static __attribute__((destructor)) void co_destructor(void) {
+  if (co_node == NULL) {
+    return;
+  }
+
+  while (co_node) {
+    current = co_node->coroutine;
+    free(current);
+    free(co_node_remove());
+  }
+}
+```
+
+## 2. 实验结果
+
+最后，在**libco**目录下，执行如下命令，生成协程的动态链接库
+
+```
+make all
+```
+
+然后进入**tests**子目录，执行如下命令进行测试
+
+```
+make test
+```
+
+最终测试结果如下所示
+
+```
+gcc -I.. -L.. -m64 main.c -o libco-test-64 -lco-64
+gcc -I.. -L.. -m32 main.c -o libco-test-32 -lco-32
+==== TEST 64 bit ====
+Test #1. Expect: (X|Y){0, 1, 2, ..., 199}
+X0  Y1  X2  Y3  X4  Y5  X6  Y7  X8  Y9  X10  Y11  X12  Y13  X14  Y15  X16  Y17  X18  Y19  X20  Y21  X22  Y23  X24  Y25  X26  Y27  X28  Y29  X30  Y31  X32  Y33  X34  Y35  X36  Y37  X38  Y39  X40  Y41  X42  Y43  X44  Y45  X46  Y47  X48  Y49  X50  Y51  X52  Y53  X54  Y55  X56  Y57  X58  Y59  X60  Y61  X62  Y63  X64  Y65  X66  Y67  X68  Y69  X70  Y71  X72  Y73  X74  Y75  X76  Y77  X78  Y79  X80  Y81  X82  Y83  X84  Y85  X86  Y87  X88  Y89  X90  Y91  X92  Y93  X94  Y95  X96  Y97  X98  Y99  X100  Y101  X102  Y103  X104  Y105  X106  Y107  X108  Y109  X110  Y111  X112  Y113  X114  Y115  X116  Y117  X118  Y119  X120  Y121  X122  Y123  X124  Y125  X126  Y127  X128  Y129  X130  Y131  X132  Y133  X134  Y135  X136  Y137  X138  Y139  X140  Y141  X142  Y143  X144  Y145  X146  Y147  X148  Y149  X150  Y151  X152  Y153  X154  Y155  X156  Y157  X158  Y159  X160  Y161  X162  Y163  X164  Y165  X166  Y167  X168  Y169  X170  Y171  X172  Y173  X174  Y175  X176  Y177  X178  Y179  X180  Y181  X182  Y183  X184  Y185  X186  Y187  X188  Y189  X190  Y191  X192  Y193  X194  Y195  X196  Y197  X198  Y199  
+
+Test #2. Expect: (libco-){200, 201, 202, ..., 399}
+libco-200  libco-201  libco-202  libco-203  libco-204  libco-205  libco-206  libco-207  libco-208  libco-209  libco-210  libco-211  libco-212  libco-213  libco-214  libco-215  libco-216  libco-217  libco-218  libco-219  libco-220  libco-221  libco-222  libco-223  libco-224  libco-225  libco-226  libco-227  libco-228  libco-229  libco-230  libco-231  libco-232  libco-233  libco-234  libco-235  libco-236  libco-237  libco-238  libco-239  libco-240  libco-241  libco-242  libco-243  libco-244  libco-245  libco-246  libco-247  libco-248  libco-249  libco-250  libco-251  libco-252  libco-253  libco-254  libco-255  libco-256  libco-257  libco-258  libco-259  libco-260  libco-261  libco-262  libco-263  libco-264  libco-265  libco-266  libco-267  libco-268  libco-269  libco-270  libco-271  libco-272  libco-273  libco-274  libco-275  libco-276  libco-277  libco-278  libco-279  libco-280  libco-281  libco-282  libco-283  libco-284  libco-285  libco-286  libco-287  libco-288  libco-289  libco-290  libco-291  libco-292  libco-293  libco-294  libco-295  libco-296  libco-297  libco-298  libco-299  libco-300  libco-301  libco-302  libco-303  libco-304  libco-305  libco-306  libco-307  libco-308  libco-309  libco-310  libco-311  libco-312  libco-313  libco-314  libco-315  libco-316  libco-317  libco-318  libco-319  libco-320  libco-321  libco-322  libco-323  libco-324  libco-325  libco-326  libco-327  libco-328  libco-329  libco-330  libco-331  libco-332  libco-333  libco-334  libco-335  libco-336  libco-337  libco-338  libco-339  libco-340  libco-341  libco-342  libco-343  libco-344  libco-345  libco-346  libco-347  libco-348  libco-349  libco-350  libco-351  libco-352  libco-353  libco-354  libco-355  libco-356  libco-357  libco-358  libco-359  libco-360  libco-361  libco-362  libco-363  libco-364  libco-365  libco-366  libco-367  libco-368  libco-369  libco-370  libco-371  libco-372  libco-373  libco-374  libco-375  libco-376  libco-377  libco-378  libco-379  libco-380  libco-381  libco-382  libco-383  libco-384  libco-385  libco-386  libco-387  libco-388  libco-389  libco-390  libco-391  libco-392  libco-393  libco-394  libco-395  libco-396  libco-397  libco-398  libco-399  
+
+==== TEST 32 bit ====
+Test #1. Expect: (X|Y){0, 1, 2, ..., 199}
+X0  Y1  X2  Y3  X4  Y5  X6  Y7  X8  Y9  X10  Y11  X12  Y13  X14  Y15  X16  Y17  X18  Y19  X20  Y21  X22  Y23  X24  Y25  X26  Y27  X28  Y29  X30  Y31  X32  Y33  X34  Y35  X36  Y37  X38  Y39  X40  Y41  X42  Y43  X44  Y45  X46  Y47  X48  Y49  X50  Y51  X52  Y53  X54  Y55  X56  Y57  X58  Y59  X60  Y61  X62  Y63  X64  Y65  X66  Y67  X68  Y69  X70  Y71  X72  Y73  X74  Y75  X76  Y77  X78  Y79  X80  Y81  X82  Y83  X84  Y85  X86  Y87  X88  Y89  X90  Y91  X92  Y93  X94  Y95  X96  Y97  X98  Y99  X100  Y101  X102  Y103  X104  Y105  X106  Y107  X108  Y109  X110  Y111  X112  Y113  X114  Y115  X116  Y117  X118  Y119  X120  Y121  X122  Y123  X124  Y125  X126  Y127  X128  Y129  X130  Y131  X132  Y133  X134  Y135  X136  Y137  X138  Y139  X140  Y141  X142  Y143  X144  Y145  X146  Y147  X148  Y149  X150  Y151  X152  Y153  X154  Y155  X156  Y157  X158  Y159  X160  Y161  X162  Y163  X164  Y165  X166  Y167  X168  Y169  X170  Y171  X172  Y173  X174  Y175  X176  Y177  X178  Y179  X180  Y181  X182  Y183  X184  Y185  X186  Y187  X188  Y189  X190  Y191  X192  Y193  X194  Y195  X196  Y197  X198  Y199  
+
+Test #2. Expect: (libco-){200, 201, 202, ..., 399}
+libco-200  libco-201  libco-202  libco-203  libco-204  libco-205  libco-206  libco-207  libco-208  libco-209  libco-210  libco-211  libco-212  libco-213  libco-214  libco-215  libco-216  libco-217  libco-218  libco-219  libco-220  libco-221  libco-222  libco-223  libco-224  libco-225  libco-226  libco-227  libco-228  libco-229  libco-230  libco-231  libco-232  libco-233  libco-234  libco-235  libco-236  libco-237  libco-238  libco-239  libco-240  libco-241  libco-242  libco-243  libco-244  libco-245  libco-246  libco-247  libco-248  libco-249  libco-250  libco-251  libco-252  libco-253  libco-254  libco-255  libco-256  libco-257  libco-258  libco-259  libco-260  libco-261  libco-262  libco-263  libco-264  libco-265  libco-266  libco-267  libco-268  libco-269  libco-270  libco-271  libco-272  libco-273  libco-274  libco-275  libco-276  libco-277  libco-278  libco-279  libco-280  libco-281  libco-282  libco-283  libco-284  libco-285  libco-286  libco-287  libco-288  libco-289  libco-290  libco-291  libco-292  libco-293  libco-294  libco-295  libco-296  libco-297  libco-298  libco-299  libco-300  libco-301  libco-302  libco-303  libco-304  libco-305  libco-306  libco-307  libco-308  libco-309  libco-310  libco-311  libco-312  libco-313  libco-314  libco-315  libco-316  libco-317  libco-318  libco-319  libco-320  libco-321  libco-322  libco-323  libco-324  libco-325  libco-326  libco-327  libco-328  libco-329  libco-330  libco-331  libco-332  libco-333  libco-334  libco-335  libco-336  libco-337  libco-338  libco-339  libco-340  libco-341  libco-342  libco-343  libco-344  libco-345  libco-346  libco-347  libco-348  libco-349  libco-350  libco-351  libco-352  libco-353  libco-354  libco-355  libco-356  libco-357  libco-358  libco-359  libco-360  libco-361  libco-362  libco-363  libco-364  libco-365  libco-366  libco-367  libco-368  libco-369  libco-370  libco-371  libco-372  libco-373  libco-374  libco-375  libco-376  libco-377  libco-378  libco-379  libco-380  libco-381  libco-382  libco-383  libco-384  libco-385  libco-386  libco-387  libco-388  libco-389  libco-390  libco-391  libco-392  libco-393  libco-394  libco-395  libco-396  libco-397  libco-398  libco-399
+```
+
+## 3. 问题记录
+
+### 编译 libco-32.so
+
+```bash
+gcc -fPIC -shared -m32 -U_FORTIFY_SOURCE -O1 -std=gnu11 -ggdb -Wall -Werror -Wno-unused-result -Wno-unused-value -Wno-unused-variable ./co.c -o libco-32.so 
+In file included from /usr/include/assert.h:35,
+                 from ./co.c:3:
+/usr/include/features.h:461:12: fatal error: sys/cdefs.h: No such file or directory
+  461 | #  include <sys/cdefs.h>
+      |            ^~~~~~~~~~~~~
+compilation terminated.
+make: *** [../Makefile:28: libco-32.so] Error 1
+```
+
+解决：
+
+```bash
+$ sudo apt install gcc-multilib
+```
