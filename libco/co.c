@@ -1,192 +1,201 @@
 #include "co.h"
-#include <stdio.h>
+
+#include <assert.h>
+#include <setjmp.h>
+#include <stdarg.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <setjmp.h>
-#include <string.h>
-#include <assert.h>
-#include <time.h>
 
-#define Assert(x, s) \
-	do { if (!x) { printf("> co assert: %s", s); assert(x); } } while(0)
-
-static inline void stack_switch_call(void *sp, void *entry, uintptr_t arg) {
-	asm volatile (
-#if __x86_64__
-		"movq %0, %%rsp; movq %2, %%rdi; jmp *%1"
-			: : "b"((uintptr_t)sp), "d"(entry), "a"(arg) : "memory"
-#else
-		"movl %0, %%esp; movl %2, 4(%0); jmp *%1"
-			: : "b"((uintptr_t)sp - 8), "d"(entry), "a"(arg) : "memory"
-#endif
-	);
-}
+struct co *current;
 
 enum co_status {
-	CO_NEW = 1,
-	CO_RUNNING,
-	CO_WAITING,
-	CO_DEAD,
+  CO_NEW = 1,  // 新创建，还未执行过
+  CO_RUNNING,  // 已经执行过
+  CO_WAITING,  // 在 co_wait 上等待
+  CO_DEAD,     // 已经结束，但还未释放资源
 };
-#define CO_STACK_SIZE (1 << 16)
+
+#define K 1024
+#define STACK_SIZE (64 * K)
+
 struct co {
-	int  id;
-	char *name;
-	void (*func)(void *);
-	void *arg;
+  const char *name;
+  void (*func)(void *);  // co_start 指定的入口地址和参数
+  void *arg;
 
-	enum co_status	status;
-	struct co *		waiter;
-	jmp_buf			context;
-	uint8_t			stack[CO_STACK_SIZE];
+  enum co_status status;            // 协程的状态
+  struct co *waiter;                // 是否有其他协程在等待当前协程
+  jmp_buf context;                  // 寄存器现场 (setjmp.h)
+  unsigned char stack[STACK_SIZE];  // 协程的堆栈
 };
 
-#define CO_POOL_SIZE 128
-static struct co *current;
-static struct co *co_pool[CO_POOL_SIZE];
-static int co_pool_size;
-static void co_pool_init() {
-	for (int i = 0; i < CO_POOL_SIZE; i ++ ) {
-		co_pool[i] = NULL;
-	}
-	current = NULL;
-}
-static int co_pool_insert(struct co *co) {
-	int success = 0;
-	for (int i = 0; i < CO_POOL_SIZE; i ++ ) {
-		if (co_pool[i] == NULL) {
-			co_pool[i] = co;
-			co->id = i;
-			success = 1;
-			co_pool_size ++ ;
-			break;
-		}
-	}
-	return success;
-}
-static struct co *co_pool_next() {
-	int start = rand() % co_pool_size;
-	for (int i = start; i < CO_POOL_SIZE + start; i ++ ) {
-		struct co *next = co_pool[i % CO_POOL_SIZE];
-		if (next == NULL)				continue;
-		if (next->status == CO_DEAD)	continue;
-		if (next->status == CO_WAITING)	continue;
+typedef struct CONODE {
+  struct co *coroutine;
 
-		return next;
-	}
-	return NULL;
-}
-void co_free(struct co *co) {
-	Assert((co != NULL), "should not free a NULL co pointer");
+  struct CONODE *fd, *bk;
+} CoNode;
 
-	co_pool[co->id] = NULL;
-	co_pool_size -- ;
+static CoNode *co_node = NULL;
+/*
+ * 如果co_node == NULL，则创建一个新的双向循环链表即可，并返回
+ * 如果co_node != NULL, 则在co_node和co_node->fd之间插入，仍然返回co_node的值
+ */
+static void co_node_insert(struct co *coroutine) {
+  CoNode *victim = (CoNode *)malloc(sizeof(CoNode));
+  assert(victim);
 
-	if (!co->name) {
-		free(co->name);
-	}
-	free(co);
+  victim->coroutine = coroutine;
+  if (co_node == NULL) {
+    victim->fd = victim->bk = victim;
+    co_node = victim;
+  } else {
+    victim->fd = co_node->fd;
+    victim->bk = co_node;
+    victim->fd->bk = victim->bk->fd = victim;
+  }
 }
 
-static void co_main_init() {
-	struct co *main = co_start("main", NULL, NULL);
-	// main is just a concept to simulate the main function, not the real main
-	main->status = CO_RUNNING;
-	current = main;
-}
+/*
+ * 如果当前只剩node一个，则返回该一个
+ * 否则，拉取当前co_node对应的协程，并沿着bk方向移动
+ */
+static CoNode *co_node_remove() {
+  CoNode *victim = NULL;
 
-static void co_switch_dead(struct co *co);
-static void co_wrapper(void *arg) {
-	struct co *co = (struct co *)arg;
+  if (co_node == NULL) {
+    return NULL;
+  } else if (co_node->bk == co_node) {
+    victim = co_node;
+    co_node = NULL;
+  } else {
+    victim = co_node;
 
-	co->func(co->arg);
-	co->status = CO_DEAD;
-	co_switch_dead(co);
-}
+    co_node = co_node->bk;
+    co_node->fd = victim->fd;
+    co_node->fd->bk = co_node;
+  }
 
-static void co_switch_new(struct co *co) {
-	current = co;
-	co->status = CO_RUNNING;
-	stack_switch_call(co->stack + CO_STACK_SIZE, co_wrapper, (uintptr_t)co);
+  return victim;
 }
-static void co_switch_running(struct co *co) {
-	current = co;
-	longjmp(co->context, 1);
-}
-static void co_switch_dead(struct co *co) {
-	if (co->waiter != NULL) {
-		longjmp(co->waiter->context, 1);
-	}
-	else {
-		co_yield();
-	}
-}
-static void co_switch_waiting(struct co *co) {
-	Assert(0, "execute a waiting co. "
-			  "maybe a waiting circle has occured\n");
-}
-typedef void (*co_handler_t)(void *arg);
-static void *co_switch[] = {
-	[CO_NEW]		= co_switch_new,
-	[CO_RUNNING]	= co_switch_running,
-	[CO_DEAD]	    = co_switch_dead,
-	[CO_WAITING]	= co_switch_waiting,
-};
 
 struct co *co_start(const char *name, void (*func)(void *), void *arg) {
-	struct co *co = (struct co *)malloc(sizeof(struct co));
-	
-	co->name = (char *)malloc(sizeof(name));
-	strcpy(co->name, name);
-	co->func = func;
-	co->arg  = arg;
-	
-	co->status = CO_NEW;
-	co->waiter = NULL;
+  struct co *coroutine = (struct co *)malloc(sizeof(struct co));
+  assert(coroutine);
 
-	co_pool_insert(co);
+  coroutine->name = name;
+  coroutine->func = func;
+  coroutine->arg = arg;
+  coroutine->status = CO_NEW;
+  coroutine->waiter = NULL;
 
-	return co;
+  co_node_insert(coroutine);
+  return coroutine;
 }
 
-void co_yield() {
-	/* jmp_buf buf; */
-	/* int val = setjmp(buf); */
-	int val = setjmp(current->context);
+void co_wait(struct co *coroutine) {
+  assert(coroutine);
 
-	if (val == 0) {
-		struct co* next = co_pool_next();
-		Assert((next != NULL), "next co to execute shouldn't be empty");
+  if (coroutine->status != CO_DEAD) {
+    coroutine->waiter = current;
+    current->status = CO_WAITING;
+    co_yield ();
+  }
 
-		((co_handler_t)co_switch[next->status])(next);
-	}
-	else {
-	}
+  /*
+   * 释放coroutine对应的CoNode
+   */
+  while (co_node->coroutine != coroutine) {
+    co_node = co_node->bk;
+  }
+
+  assert(co_node->coroutine == coroutine);
+
+  free(coroutine);
+  free(co_node_remove());
 }
 
-void co_wait(struct co *co) {
-	Assert((co != NULL), "wait a null co\n");
-	Assert((co != current), "current co can't wait itself\n");
-
-	int val = setjmp(current->context);
-
-	if (val == 0) {
-		current->status = CO_WAITING;
-		co->waiter = current;
-		((co_handler_t)co_switch[co->status])(co);
-	}
-	else {
-		co_free(co);
-		current->status = CO_RUNNING;
-	}
+/*
+ * 切换栈，即让选中协程的所有堆栈信息在自己的堆栈中，而非调用者的堆栈。保存调用者需要保存的寄存器，并调用指定的函数
+ */
+static inline void stack_switch_call(void *sp, void *entry, void *arg) {
+  asm volatile(
+#if __x86_64__
+      "movq %%rcx, 0(%0); movq %0, %%rsp; movq %2, %%rdi; call *%1"
+      :
+      : "b"((uintptr_t)sp - 16), "d"((uintptr_t)entry), "a"((uintptr_t)arg)
+#else
+      "movl %%ecx, 4(%0); movl %0, %%esp; movl %2, 0(%0); call *%1"
+      :
+      : "b"((uintptr_t)sp - 8), "d"((uintptr_t)entry), "a"((uintptr_t)arg)
+#endif
+  );
+}
+/*
+ * 从调用的指定函数返回，并恢复相关的寄存器。此时协程执行结束，以后再也不会执行该协程的上下文。这里需要注意的是，其和上面并不是对称的，因为调用协程给了新创建的选中协程的堆栈，则选中协程以后就在自己的堆栈上执行，永远不会返回到调用协程的堆栈。
+ */
+static inline void restore_return() {
+  asm volatile(
+#if __x86_64__
+      "movq 0(%%rsp), %%rcx"
+      :
+      :
+#else
+      "movl 4(%%esp), %%ecx"
+      :
+      :
+#endif
+  );
 }
 
-__attribute__((constructor)) void co_constructor() {
-	srand((unsigned int)time(NULL));
-	co_pool_init();
-	co_main_init();
+#define __LONG_JUMP_STATUS (1)
+void co_yield () {
+  int status = setjmp(current->context);
+  if (!status) {
+    //此时开始查找待选中的进程，因为co_node应该指向的就是current对应的节点，因此首先向下移动一个，使当前线程优先级最低
+    co_node = co_node->bk;
+    while (!((current = co_node->coroutine)->status == CO_NEW || current->status == CO_RUNNING)) {
+      co_node = co_node->bk;
+    }
+
+    assert(current);
+
+    if (current->status == CO_RUNNING) {
+      longjmp(current->context, __LONG_JUMP_STATUS);
+    } else {
+      ((struct co volatile *)current)->status = CO_RUNNING;  //这里如果直接赋值，编译器会和后面的覆写进行优化
+
+      // 栈由高地址向低地址生长
+      stack_switch_call(current->stack + STACK_SIZE, current->func, current->arg);
+      //恢复相关寄存器
+      restore_return();
+
+      //此时协程已经完成执行
+      current->status = CO_DEAD;
+
+      if (current->waiter) {
+        current->waiter->status = CO_RUNNING;
+      }
+      co_yield ();
+    }
+  }
+
+  assert(status && current->status == CO_RUNNING);  //此时一定是选中的进程通过longjmp跳转到的情况执行到这里
 }
 
-__attribute__((destructor)) void co_destructor() {
-	co_free(co_pool[0]);
+static __attribute__((constructor)) void co_constructor(void) {
+  current = co_start("main", NULL, NULL);
+  current->status = CO_RUNNING;
+}
+
+static __attribute__((destructor)) void co_destructor(void) {
+  if (co_node == NULL) {
+    return;
+  }
+
+  while (co_node) {
+    current = co_node->coroutine;
+    free(current);
+    free(co_node_remove());
+  }
 }
