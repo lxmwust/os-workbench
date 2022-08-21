@@ -378,16 +378,91 @@ static inline void stack_switch_call(void *sp, void *entry, uintptr_t arg) {
 > gdb 是这个实验的好帮手，无论如何都要逼自己熟练掌握。例如，你可以试着调试一小段 setjmp/longjmp 的代码，来观察 setjmp/longjmp 是如何处理寄存器和堆栈的，例如是否只保存了 volatile registers 的值？如何实现堆栈的切换？堆栈式如何对齐的？
 >
 > ```c
+> #include <stdio.h>
+> #include <setjmp.h>
+> 
 > int main() {
->     int n = 0;
->     jmp_buf buf;
->     setjmp(buf);
->     printf("Hello %d\n", n);
->     longjmp(buf, n++);
+>  int n = 0;
+>  jmp_buf buf;
+>  setjmp(buf);
+>  printf("Hello %d\n", n);
+>  longjmp(buf, n++);
 > }
 > ```
 >
 > 无论你觉得你理解得多么 “清楚”，亲手调试过代码后的感觉仍是很不一样的。
+
+```assembly
+	.file	"a.c"
+	.text
+	.section	.rodata
+.LC0:
+	.string	"Hello %d\n"
+	.text
+	.globl	main
+	.type	main, @function
+main:
+.LFB0:
+	.cfi_startproc
+	endbr64
+	pushq	%rbp
+	.cfi_def_cfa_offset 16
+	.cfi_offset 6, -16
+	movq	%rsp, %rbp
+	.cfi_def_cfa_register 6
+	subq	$224, %rsp
+	movq	%fs:40, %rax
+	movq	%rax, -8(%rbp)
+	xorl	%eax, %eax 			# int main() {
+	
+	movl	$0, -212(%rbp) 		# int n = 0;
+	
+	leaq	-208(%rbp), %rax
+	movq	%rax, %rdi
+	call	_setjmp@PLT
+	endbr64						# setjmp(buf);
+	
+	movl	-212(%rbp), %eax
+	movl	%eax, %esi
+	leaq	.LC0(%rip), %rdi
+	movl	$0, %eax
+	call	printf@PLT			# printf("Hello %d\n", n);
+	
+	movl	-212(%rbp), %eax
+	leal	1(%rax), %edx
+	movl	%edx, -212(%rbp)
+	leaq	-208(%rbp), %rdx
+	movl	%eax, %esi
+	movq	%rdx, %rdi
+	call	longjmp@PLT			# longjmp(buf, n++);
+	.cfi_endproc
+.LFE0:
+	.size	main, .-main
+	.ident	"GCC: (Ubuntu 9.4.0-1ubuntu1~20.04.1) 9.4.0"
+	.section	.note.GNU-stack,"",@progbits
+	.section	.note.gnu.property,"a"
+	.align 8
+	.long	 1f - 0f
+	.long	 4f - 1f
+	.long	 5
+0:
+	.string	 "GNU"
+1:
+	.align 8
+	.long	 0xc0000002
+	.long	 3f - 2f
+2:
+	.long	 0x3
+3:
+	.align 8
+4:
+```
+
+
+
+The **setjmp**() function saves various information about the calling environment (typically, the stack pointer, the instruction pointer, possibly the values of other registers and the signal mask) in the buffer env for later use by **longjmp**(). In this case, **setjmp**() returns 0.
+
+The **longjmp**() function uses the information saved in env to transfer control back to the point where **setjmp**() was called and to restore ("rewind") the stack to its state at the time of the **setjmp**() call. In addition, and depending on the implementation (see NOTES), the values of some other registers and the process signal mask may be restored to their state at the time of the **setjmp**() call.
 
 ### 4.6. 实现协程
 
