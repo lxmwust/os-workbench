@@ -9,3 +9,4 @@ a.out-*
 *.pdf
 .DS_Store
 a.dSYM
+*.so
