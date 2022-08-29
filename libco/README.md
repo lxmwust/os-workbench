@@ -458,9 +458,16 @@ main:
 4:
 ```
 
+```c
+#include <setjmp.h>
 
+int setjmp(jmp_buf env);
+void longjmp(jmp_buf env, int val);
+```
 
 The **setjmp**() function saves various information about the calling environment (typically, the stack pointer, the instruction pointer, possibly the values of other registers and the signal mask) in the buffer env for later use by **longjmp**(). In this case, **setjmp**() returns 0.
+
+> 经测试，第一次 setjmp 返回 0，之后由 longjmp 恢复的 setjmp 返回 1
 
 The **longjmp**() function uses the information saved in env to transfer control back to the point where **setjmp**() was called and to restore ("rewind") the stack to its state at the time of the **setjmp**() call. In addition, and depending on the implementation (see NOTES), the values of some other registers and the process signal mask may be restored to their state at the time of the **setjmp**() call.
 
