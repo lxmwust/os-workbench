@@ -4,6 +4,15 @@
 #include <string.h>
 #include <malloc.h>
 #include <assert.h>
+
+#ifdef LOCAL_MACHINE
+	#define debug(format, arg...) printf(format, ##arg)
+	#define debug_info(format, ...) printf("\033[1m\033[45;33m Info:[%s:%s(%d)]: \033[0m" format "\n", __FILE__, __FUNCTION__, __LINE__, ##__VA_ARGS__);
+#else
+	#define debug(format, arg...);
+	#define debug_info(format, ...)
+#endif
+
 #define zassert(x, s) \
 	do { if ((x) == 0) { printf("%s\n", s); assert((x)); } } while (0)
 
@@ -26,11 +35,18 @@ void add(double time, char *name) {
 	si->time = time;
 	si->next = syscall_info;
 	/* printf("-- %lf %s\n", si->time, si->name); */
+	debug_info("-- %lf %s\n", si->time, si->name);
+
 	syscall_info = si;
 }
 
 int main(int argc, char *argv[], char *envp[]) {
 	zassert(argc >= 2, "need at least one argument");
+	
+	debug_info("Test Begin.");
+	for (int i = 0; i < argc; i++) {
+		debug_info("argv[%d]:%s", i, argv[i]);
+	}
 
 	char *strace_argv[] = { "strace", "-r", argv[1], NULL };
 	int pipefd[2];
