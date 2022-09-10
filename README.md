@@ -1,9 +1,11 @@
 # OS Workbench
 
-- [x] [pstree](./sperf)
-- [x] [thread](./thread)
-- [x] [ibco](./libco)
-- [x] [sperf](./sperf)
+- [x] [打印进程树 (pstree)](./sperf)
+- [x] [线程库 (thread)](./thread)
+- [x] [协程库 (libco)](./libco)
+- [x] [系统调用 Profiler (sperf)](./sperf)
+- [ ] [C Real-Eval-Print-Loop (crepl)](./crepl)
+- [ ] [File Recovery (frecov)](./frecov)
 
 ---
 
