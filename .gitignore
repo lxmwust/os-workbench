@@ -10,3 +10,4 @@ a.out-*
 .DS_Store
 a.dSYM
 *.so
+*.out
