@@ -4,8 +4,8 @@
 - [x] [线程库 (thread)](./thread)
 - [x] [协程库 (libco)](./libco)
 - [x] [系统调用 Profiler (sperf)](./sperf)
-- [ ] [C Real-Eval-Print-Loop (crepl)](./crepl)
-- [ ] [File Recovery (frecov)](./frecov)
+- [x] [C Real-Eval-Print-Loop (crepl)](./crepl)
+- [x] ~~[File Recovery (frecov)](./frecov)~~
 
 ---
 
